@@ -1,0 +1,6 @@
+name: Globals
+values:
+  - key: auth_token
+    value: ''
+    enabled: true
+    type: default

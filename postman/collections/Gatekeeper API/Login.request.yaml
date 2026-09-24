@@ -1,0 +1,50 @@
+$kind: http-request
+method: POST
+url: "{{base_url}}/api/organizations/2/routes"
+order: 1000
+headers:
+  Authorization: Bearer {{auth_token}}
+body:
+  type: json
+  content: |-
+    {
+      "routeId": "food-api",
+      "name": "Food API",
+      "pathPattern": "/api/food/**",
+      "targetBaseUrl": "http://localhost:9000",
+      "targetPathPrefix": "/food",
+      "requestsPerMinute": 100,
+      "responseTimeoutMs": 5000,
+      "idempotencyEnabled": false
+    }
+scripts:
+  - type: beforeRequest
+    code: |-
+      pm.sendRequest({
+          url: 'http://localhost:8081/api/auth/login',
+          method: 'POST',
+          header: {
+              'Content-Type': 'application/json'
+          },
+          body: {
+              mode: 'raw',
+              raw: JSON.stringify({
+                  username: 'platform-admin',
+                  password: 'Gatekeeper@123'
+              })
+          }
+      }, function (err, res) {
+          if (err) {
+              console.error('Auth failed:', err);
+              return;
+          }
+          const token = res.json().token;
+          pm.globals.set('auth_token', token);
+          console.log('Token refreshed and saved to globals successfully');
+      });
+    language: text/javascript
+  - type: afterResponse
+    code: |
+      pm.test("Status code is 401", function () {
+          pm.response.to.have.status(401);
+      });
